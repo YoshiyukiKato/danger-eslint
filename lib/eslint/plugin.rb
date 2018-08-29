@@ -21,6 +21,10 @@ module Danger
     # @return [String]
     attr_accessor :ignore_file
 
+    # A path to eslint bin file
+    # @return [String]
+    attr_accessor :eslint_bin
+
     # Enable filtering
     # Only show messages within changed files.
     # @return [Boolean]
@@ -45,7 +49,7 @@ module Danger
     #
     # return [String]
     def eslint_path
-      local = './node_modules/.bin/eslint'
+      local = eslint_bin_path || './node_modules/.bin/eslint'
       File.exist?(local) ? local : find_executable('eslint')
     end
 
