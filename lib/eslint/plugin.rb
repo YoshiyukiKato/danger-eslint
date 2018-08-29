@@ -1,5 +1,6 @@
 require 'mkmf'
 require 'json'
+require 'pathname'
 
 module Danger
   # Lint javascript files using [eslint](http://eslint.org/).
@@ -26,6 +27,12 @@ module Danger
     # @return [Boolean]
     attr_accessor :filtering
 
+    # A list of eslint targets separated by whitespace
+    # Manner to represent the targets depends on the eslint CLI manner
+    # See also https://eslint.org/docs/user-guide/command-line-interface
+    # @return [String]
+    attr_accessor :target
+
     # Lints javascript files.
     # Generates `errors` and `warnings` due to eslint's config.
     # Will try to send inline comment if supported(Github)
@@ -41,6 +48,21 @@ module Danger
 
     private
 
+    # Get full path of eslint's target
+    #
+    # @return [String]
+    def target_fullpath
+      target ||= '.'
+      Pathname.new("#{Dir.pwd}/#{target}").cleanpath.to_s
+    end
+
+    # Get full path of a file in the project
+    #
+    # @return [String]
+    def file_fullpath(file)
+      Pathname.new("#{Dir.pwd}/#{file}").cleanpath.to_s
+    end
+
     # Get eslint' bin path
     #
     # return [String]
@@ -55,9 +77,9 @@ module Danger
     def lint_results
       bin = eslint_path
       raise 'eslint is not installed' unless bin
-      return run_lint(bin, '.') unless filtering
+      return run_lint(bin, target || '.') unless filtering
       ((git.modified_files - git.deleted_files) + git.added_files)
-        .select { |f| f.end_with? '.js' }
+        .select { |f| (file_fullpath(f).start_with? target_fullpath) && (f.end_with? '.js') }
         .map { |f| f.gsub("#{Dir.pwd}/", '') }
         .map { |f| run_lint(bin, f).first }
     end
